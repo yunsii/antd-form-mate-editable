@@ -1,7 +1,9 @@
 export default {
-  map: {
-    currentAddress: '当前地址：',
-    addressPickPlaceholder: '请选择地址',
-    addressInputPlaceholder: '请输入地址',
-  },
+  create: '新建',
+  option: '操作',
+  edit: '编辑',
+  delete: '删除',
+  deleteHint: '确定删除吗？',
+  save: '保存',
+  cancel: '取消',
 }

@@ -1,7 +1,9 @@
 export default {
-  map: {
-    currentAddress: 'Current Address: ',
-    addressPickPlaceholder: 'Pick somewhere',
-    addressInputPlaceholder: 'Enter...',
-  },
+  create: 'Create',
+  option: 'Option',
+  edit: 'Edit',
+  delete: 'Delete',
+  deleteHint: 'Confirm to delete?',
+  save: 'Save',
+  cancel: 'Cancel',
 }

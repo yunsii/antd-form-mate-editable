@@ -14,6 +14,7 @@ import { ItemConfig, ComponentType } from 'antd-form-mate/dist/lib/props';
 import { setRenderForColumn, addDivider } from './utils';
 import styles from './index.less';
 import EditableCell from './EditableCell';
+import { useIntl } from '../../intl-context';
 
 type Diff<T, U> = T extends U ? never : T;  // Remove types from T that are assignable to U
 export type FormItemConfig = Pick<ItemConfig, "componentProps" | "formItemProps" | "component"> & { type?: Diff<ComponentType, 'dynamic'> }
@@ -62,6 +63,7 @@ export interface EditableTableHandles {
 }
 
 const InternalEditableTable: React.RefForwardingComponent<EditableTableHandles, EditableTableProps> = (props, ref) => {
+  const intl = useIntl();
   const {
     columns,
     initialData = [],
@@ -211,14 +213,14 @@ const InternalEditableTable: React.RefForwardingComponent<EditableTableHandles, 
       if (!onClick) {
         return <span key={text} className={styles.notAllow}>{text}</span>
       }
-      if (text === '删除') {
+      if (text === intl.getMessage('delete', '删除')) {
         return (
           <Popconfirm
             key={text}
-            title="确定删除吗？?"
+            title={intl.getMessage('deleteHint', '确定删除吗？')}
             onConfirm={onClick}
           >
-            <a>删除</a>
+            <a>{intl.getMessage('delete', '删除')}</a>
           </Popconfirm>
         )
       }
@@ -230,11 +232,11 @@ const InternalEditableTable: React.RefForwardingComponent<EditableTableHandles, 
     const setInitOptionsConfig = (record) => {
       let result: { text: string; onClick: (() => void) | undefined }[] = [
         {
-          text: '编辑',
+          text: intl.getMessage('edit', '编辑'),
           onClick: () => { setEditingKey(record.key) },
         },
         {
-          text: '删除',
+          text: intl.getMessage('delete', '删除'),
           onClick: () => { handleDelete(record) },
         },
       ];
@@ -247,11 +249,11 @@ const InternalEditableTable: React.RefForwardingComponent<EditableTableHandles, 
     const setEditOptionsConfig = (record) => {
       return [
         {
-          text: '保存',
+          text: intl.getMessage('save', '保存'),
           onClick: () => { handleSave(record.key) },
         },
         {
-          text: '取消',
+          text: intl.getMessage('cancel', '取消'),
           onClick: () => { handleCancel(record) },
         },
       ];
@@ -260,7 +262,7 @@ const InternalEditableTable: React.RefForwardingComponent<EditableTableHandles, 
     return [
       ...columns.map(setRenderForColumn),
       {
-        title: '操作',
+        title: intl.getMessage('option', '操作'),
         render: (_: void, record) => {
           if (editingKey === null || editingKey !== record.key) {
             return addDivider(setInitOptionsConfig(record).map(renderOption));
@@ -286,7 +288,7 @@ const InternalEditableTable: React.RefForwardingComponent<EditableTableHandles, 
           onClick={handleAdd}
           disabled={!!editingKey}
         >
-          新建
+          {intl.getMessage('create', '新建')}
         </Button>
         <Table
           rowKey='key'

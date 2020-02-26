@@ -5,11 +5,11 @@ import EditableTable, { EditableTableHandles } from '../../src/components/Editab
 
 const genderOptions = [
   {
-    text: '男',
+    label: '男',
     value: 1,
   },
   {
-    text: '女',
+    label: '女',
     value: 2,
   },
 ];

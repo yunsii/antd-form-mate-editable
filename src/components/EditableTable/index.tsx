@@ -25,14 +25,14 @@ export interface EditableColumnProps<T = any> extends ColumnType<T> {
 }
 
 export interface EditableTableProps<T = any> extends TableProps<T> {
-  form: FormInstance;
-  columns: EditableColumnProps<T>[];
-  initialData: T[];
+  form?: FormInstance;
+  columns?: EditableColumnProps<T>[];
+  initialData?: T[];
   initialValues?: Partial<T>,
-  onCreate: (fieldsValue: T & { key: number }) => Promise<boolean | void>;
-  onUpdate: (fieldsValue: T & { key: number }) => Promise<boolean | void>;
-  onDelete: (record: T & { key: number }) => Promise<boolean | void>;
-  onDataChange: (data: T[]) => void;
+  onCreate?: (fieldsValue: T & { key: number }) => Promise<boolean | void>;
+  onUpdate?: (fieldsValue: T & { key: number }) => Promise<boolean | void>;
+  onDelete?: (record: T & { key: number }) => Promise<boolean | void>;
+  onDataChange?: (data: T[]) => void;
   onCancel?: (prevRecord: T & { key: number }, record: T & { key: number }) => void;
   onRecordAdd?: (initialRecord: T, prevData: T[]) => T;
   editingKey?: (editingKey: number | null) => void;
@@ -64,7 +64,7 @@ export interface EditableTableHandles {
 const InternalEditableTable: React.RefForwardingComponent<EditableTableHandles, EditableTableProps> = (props, ref) => {
   const {
     columns,
-    initialData,
+    initialData = [],
     initialValues = {},
     form,
     loading = false,
@@ -150,7 +150,7 @@ const InternalEditableTable: React.RefForwardingComponent<EditableTableHandles, 
 
   const getColumnsValue = (fieldsValue) => {
     let result: any = {};
-    columns.forEach((element) => {
+    columns && columns.forEach((element) => {
       if (element.dataIndex) {
         result[element.dataIndex as string] = fieldsValue[element.dataIndex as string];
       }
@@ -184,7 +184,9 @@ const InternalEditableTable: React.RefForwardingComponent<EditableTableHandles, 
     });
   }
 
-  const parseColumns = (columns: EditableColumnProps[]) => {
+  const parseColumns: (columns?: EditableColumnProps[]) => (ColumnType<any>[] | undefined) = (columns) => {
+    if (!columns) return columns;
+
     return columns.map(col => {
       if (!col.editConfig) {
         return col;
@@ -195,7 +197,7 @@ const InternalEditableTable: React.RefForwardingComponent<EditableTableHandles, 
           record,
           formItemConfig: col.editConfig,
           dataIndex: col.dataIndex,
-          title: col.title,
+          title: col.title as any,
           editing: isEditingRecord(record),
         }),
       };
@@ -203,6 +205,8 @@ const InternalEditableTable: React.RefForwardingComponent<EditableTableHandles, 
   }
 
   const renderColumns = () => {
+    if (!columns) return columns;
+
     const renderOption = ({ text, onClick }: { text: string, onClick: any }) => {
       if (!onClick) {
         return <span key={text} className={styles.notAllow}>{text}</span>
@@ -295,7 +299,7 @@ const InternalEditableTable: React.RefForwardingComponent<EditableTableHandles, 
           components={components}
           bordered
           dataSource={internalData}
-          columns={parseColumns(renderColumns()) as any}
+          columns={parseColumns(renderColumns())}
           pagination={false}
         />
       </Form>

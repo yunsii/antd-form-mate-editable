@@ -62,7 +62,7 @@ export interface EditableTableHandles {
   isEditing: () => boolean;
 }
 
-const InternalEditableTable: React.RefForwardingComponent<EditableTableHandles, EditableTableProps> = (props, ref) => {
+const InternalEditableTable: React.ForwardRefRenderFunction<EditableTableHandles, EditableTableProps> = (props, ref) => {
   const intl = useIntl();
   const {
     columns,

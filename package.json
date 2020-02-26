@@ -86,5 +86,6 @@
   "types": "./dist/index.d.ts",
   "typings": "./dist/index.d.ts",
   "author": "theprimone <yuns.xie@qq.com> (https://theprimone.top/)",
-  "license": "MIT"
+  "license": "MIT",
+  "version": "1.0.0"
 }

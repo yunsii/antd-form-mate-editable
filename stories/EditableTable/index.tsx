@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Divider, Form } from 'antd';
+import { Button, Divider } from 'antd';
 import moment from 'moment';
 import EditableTable, { EditableTableHandles } from '../../src/components/EditableTable';
 
@@ -16,7 +16,6 @@ const genderOptions = [
 
 export default () => {
   const tableRef = React.createRef<EditableTableHandles>();
-  const [form] = Form.useForm();
   const [
     editingKey,
     setEditingKey,
@@ -25,7 +24,6 @@ export default () => {
     <div style={{ width: '100%', height: '100%', padding: 48 }}>
       <div style={{ width: 900, margin: '0 auto' }}>
         <EditableTable
-          form={form}
           initialValues={{
             name: "xxx",
             gender: 1

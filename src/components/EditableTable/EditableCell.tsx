@@ -35,17 +35,21 @@ export default function EditableCell<T>(props: EditableCellProps<T>) {
       children,
       ...restProps
     } = props;
+
+    const { formItemProps, ...restFormItemConfig } = formItemConfig;
+
     return (
       <td {...restProps}>
         {editing && dataIndex ? (
           <Form.Item style={{ margin: 0 }}>
             {createFormItems([
               {
-                ...formItemConfig,
+                ...restFormItemConfig,
                 name: dataIndex,
                 formItemProps: {
                   dense: true,
-                }
+                  ...formItemProps,
+                },
               },
             ])}
           </Form.Item>

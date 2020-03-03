@@ -60,9 +60,7 @@ export default () => {
                 editConfig: {
                   type: 'date',
                   formItemProps: {
-                    rules: [
-                      { required: true },
-                    ],
+                    required: true,
                   }
                 },
               },

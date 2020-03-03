@@ -4,9 +4,10 @@ import { Form } from 'antd';
 import { ColumnType } from 'antd/lib/table';
 import _get from 'lodash/get';
 import _isArray from 'lodash/isArray';
+import _find from 'lodash/find';
 import _cloneDeep from 'lodash/cloneDeep';
 import _findIndex from 'lodash/findIndex';
-import { createFormItems } from 'antd-form-mate';
+import { createFormItems, IntlConsumer } from 'antd-form-mate';
 
 import { FormItemConfig } from './index';
 
@@ -25,7 +26,7 @@ export interface EditableCellProps<T> {
 }
 
 export default function EditableCell<T>(props: EditableCellProps<T>) {
-  const renderCell = () => {
+  const renderCell = ({ locale, getMessage }) => {
     const {
       editing,
       dataIndex,
@@ -36,7 +37,24 @@ export default function EditableCell<T>(props: EditableCellProps<T>) {
       ...restProps
     } = props;
 
-    const { formItemProps, ...restFormItemConfig } = formItemConfig;
+    const { formItemProps = {}, ...restFormItemConfig } = formItemConfig;
+    const { required, rules, ...restFormItemProps } = formItemProps;
+
+    function setRules() {
+      let result = rules ? [...rules] : [];
+
+      if (required && !_find(rules, { required: true })) {
+        result = [
+          {
+            required: true,
+            message: `${title} ${getMessage('message.isRequired', '必填')}`,
+          },
+          ...result,
+        ]
+      }
+
+      return result;
+    }
 
     return (
       <td {...restProps}>
@@ -48,7 +66,8 @@ export default function EditableCell<T>(props: EditableCellProps<T>) {
                 name: dataIndex,
                 formItemProps: {
                   dense: true,
-                  ...formItemProps,
+                  rules: setRules(),
+                  ...restFormItemProps,
                 },
               },
             ])}
@@ -59,5 +78,9 @@ export default function EditableCell<T>(props: EditableCellProps<T>) {
       </td>
     );
   };
-  return renderCell();
+  return (
+    <IntlConsumer>
+      {renderCell}
+    </IntlConsumer>
+  );
 }

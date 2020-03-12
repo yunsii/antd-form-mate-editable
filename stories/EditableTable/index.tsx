@@ -96,6 +96,12 @@ export default () => {
             }}
             editingKey={setEditingKey}
             ref={tableRef}
+            toolBarRender={() => {
+              return [
+                <Button key="sort">Sort</Button>,
+              ]
+            }}
+            tailAdd={false}
           />
           <Divider />
           <Button

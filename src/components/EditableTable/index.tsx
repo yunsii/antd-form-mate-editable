@@ -47,15 +47,6 @@ export interface EditableTableProps<T = any> extends TableProps<T> {
   tailAdd?: boolean;
 }
 
-export interface EditableTableState<T> {
-  initialData: (T & { key: number })[];
-  data: (T & { key: number })[];
-  initialRecordValues: T;
-  editingKey: number | null;
-  count: number;
-  tableLoading: boolean;
-}
-
 function setInitialData<T>(initialData: T[]) {
   return initialData.map((item, index) => {
     return {

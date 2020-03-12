@@ -1,6 +1,6 @@
 /* eslint-disable react/no-multi-comp */
 import React, { useState, useEffect } from 'react';
-import { Table, Spin, Button, Popconfirm, Form } from 'antd';
+import { Table, Spin, Button, Popconfirm, Form, Row, Col } from 'antd';
 import { FormInstance } from 'antd/lib/form/Form';
 import { TableProps, ColumnType } from 'antd/lib/table';
 import _get from 'lodash/get';
@@ -25,6 +25,10 @@ export interface EditableColumnProps<T = any> extends ColumnType<T> {
   editConfig?: FormItemConfig;
 }
 
+export interface OptionsType {
+  create?: boolean;
+}
+
 export interface EditableTableProps<T = any> extends TableProps<T> {
   form?: FormInstance;
   columns?: EditableColumnProps<T>[];
@@ -38,6 +42,9 @@ export interface EditableTableProps<T = any> extends TableProps<T> {
   onRecordAdd?: (initialRecord: T, prevData: T[]) => T;
   editingKey?: (editingKey: number | null) => void;
   loading?: boolean;
+  options?: OptionsType;
+  toolBarRender?: () => React.ReactNode[];
+  tailAdd?: boolean;
 }
 
 export interface EditableTableState<T> {
@@ -75,9 +82,13 @@ const InternalEditableTable: React.ForwardRefRenderFunction<EditableTableHandles
     onDelete = () => true,
     // onDataChange = () => null,
     onRecordAdd,
+    options,
+    toolBarRender,
+    tailAdd = true,
   } = props;
 
   const [wrapForm] = Form.useForm(form);
+  const { create = true } = options || {};
 
   const [internalData, setInternalData] = useState(setInitialData(initialData) || []);
   const [count, setCount] = useState<number>(initialData?.length || 0);
@@ -114,13 +125,22 @@ const InternalEditableTable: React.ForwardRefRenderFunction<EditableTableHandles
       newRecord = { ...newRecord, ...onRecordAdd(newRecord, internalData) };
     }
 
-    setInternalData([
-      ...internalData,
-      {
-        ...newRecord,
-        key: count + 1,
-      },
-    ]);
+    setInternalData(tailAdd ?
+      [
+        ...internalData,
+        {
+          ...newRecord,
+          key: count + 1,
+        },
+      ] :
+      [
+        {
+          ...newRecord,
+          key: count + 1,
+        },
+        ...internalData,
+      ]
+    );
     setEditingKey(count + 1);
     setCount(count + 1);
   };
@@ -279,17 +299,33 @@ const InternalEditableTable: React.ForwardRefRenderFunction<EditableTableHandles
     },
   };
 
+  const createOption = (
+    <Button
+      type='primary'
+      key='create'
+      onClick={handleAdd}
+      disabled={!!editingKey}
+    >
+      {intl.getMessage('create', '新建')}
+    </Button>
+  )
+
+  const _options: React.ReactNode[] = [create && createOption, toolBarRender ? toolBarRender() : null].filter(item => item);
+
+  console.log(internalData)
+
   return (
     <Spin spinning={loading || tableLoading}>
       <Form form={wrapForm}>
-        <Button
-          type='primary'
-          style={{ margin: '12px 0' }}
-          onClick={handleAdd}
-          disabled={!!editingKey}
-        >
-          {intl.getMessage('create', '新建')}
-        </Button>
+        <Row gutter={8} style={{ margin: "12px 0" }}>
+          {_options.map((item, index) => {
+            return (
+              <Col key={index}>
+                {item}
+              </Col>
+            );
+          })}
+        </Row>
         <Table
           rowKey='key'
           rowClassName={(_, index) => {

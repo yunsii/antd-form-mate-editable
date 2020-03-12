@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Divider } from 'antd';
 import moment from 'moment';
 import EditableTable, { IntlProvider, enUSIntl } from '../../src';
@@ -21,6 +21,27 @@ export default () => {
     editingKey,
     setEditingKey,
   ] = useState<number | null>();
+  const [data, setData] = useState<any[]>([]);
+
+  useEffect(() => {
+    setTimeout(() => {
+      setData([
+        {
+          id: 123,
+          gender: 1,
+          name: 'xys',
+          birthday: null,
+        },
+        {
+          id: 23,
+          gender: 2,
+          name: 'theprimone',
+          birthday: null,
+        },
+      ])
+    }, 1000);
+  }, []);
+
   return (
     <IntlProvider value={enUSIntl}>
       <div style={{ width: '100%', height: '100%', padding: 48 }}>
@@ -65,20 +86,7 @@ export default () => {
                 },
               },
             ]}
-            initialData={[
-              {
-                id: 123,
-                gender: 1,
-                name: 'xys',
-                birthday: null,
-              },
-              {
-                id: 23,
-                gender: 2,
-                name: 'theprimone',
-                birthday: null,
-              },
-            ]}
+            data={data}
             onCreate={async (record) => {
               console.log('create record', record);
             }}
@@ -88,8 +96,9 @@ export default () => {
             onDelete={async (record) => {
               console.log('delete record', record);
             }}
-            onDataChange={(data) => {
+            onChange={(data) => {
               console.log(data);
+              setData(data);
             }}
             onCancel={(prevRecord, record) => {
               console.log(prevRecord, record);

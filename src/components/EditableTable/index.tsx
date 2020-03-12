@@ -1,6 +1,6 @@
 /* eslint-disable react/no-multi-comp */
 import React, { useState, useEffect } from 'react';
-import { Table, Spin, Button, Popconfirm, Form } from 'antd';
+import { Table, Spin, Button, Popconfirm, Form, Row, Col } from 'antd';
 import { FormInstance } from 'antd/lib/form/Form';
 import { TableProps, ColumnType } from 'antd/lib/table';
 import _get from 'lodash/get';
@@ -21,26 +21,34 @@ export type FormItemConfig = Pick<ItemConfig, "componentProps" | "formItemProps"
 
 export interface DefaultRecordParams { id: number | string }
 
-export interface EditableColumnProps<T = any> extends ColumnType<T> {
+export interface EditableColumnProps<RecordType = any> extends ColumnType<RecordType> {
   editConfig?: FormItemConfig;
 }
 
-export interface EditableTableProps<T = any> extends TableProps<T> {
-  form?: FormInstance;
-  columns?: EditableColumnProps<T>[];
-  initialData?: T[];
-  initialValues?: Partial<T>,
-  onCreate?: (fieldsValue: T & { key: number }) => Promise<boolean | void>;
-  onUpdate?: (fieldsValue: T & { key: number }) => Promise<boolean | void>;
-  onDelete?: (record: T & { key: number }) => Promise<boolean | void>;
-  onDataChange?: (data: T[]) => void;
-  onCancel?: (prevRecord: T & { key: number }, record: T & { key: number }) => void;
-  onRecordAdd?: (initialRecord: T, prevData: T[]) => T;
-  editingKey?: (editingKey: number | null) => void;
-  loading?: boolean;
+export interface OptionsType {
+  create?: boolean;
 }
 
-function setInitialData<T>(initialData: T[]) {
+export interface EditableTableProps<RecordType = any> extends Omit<TableProps<RecordType>, "dataSource" | "onChange"> {
+  form?: FormInstance;
+  columns?: EditableColumnProps<RecordType>[];
+  data?: RecordType[];
+  onChange?: (data: RecordType & { key: number }[]) => void;
+  initialValues?: Partial<RecordType>,
+  onCreate?: (fieldsValue: RecordType & { key: number }) => Promise<boolean | void>;
+  onUpdate?: (fieldsValue: RecordType & { key: number }) => Promise<boolean | void>;
+  onDelete?: (record: RecordType & { key: number }) => Promise<boolean | void>;
+  onCancel?: (prevRecord: RecordType & { key: number }, record: RecordType & { key: number }) => void;
+  loading?: boolean;
+  // 添加一条记录时，回调处理新增的记录
+  onAdd?: (initialRecord: RecordType, prevData: RecordType[]) => RecordType;
+  editingKey?: (editingKey: number | null) => void;
+  options?: OptionsType;
+  toolBarRender?: () => React.ReactNode[];
+  tailAdd?: boolean;
+}
+
+function getKeyedData<RecordType>(initialData: RecordType[]) {
   return initialData.map((item, index) => {
     return {
       ...item,
@@ -57,21 +65,24 @@ const InternalEditableTable: React.ForwardRefRenderFunction<EditableTableHandles
   const intl = useIntl();
   const {
     columns,
-    initialData = [],
+    data = [],
     initialValues = {},
     form,
     loading = false,
     onCreate = () => true,
     onUpdate = () => true,
     onDelete = () => true,
-    // onDataChange = () => null,
-    onRecordAdd,
+    onChange,
+    onAdd,
+    options,
+    toolBarRender,
+    tailAdd = true,
   } = props;
 
   const [wrapForm] = Form.useForm(form);
+  const { create = true } = options || {};
 
-  const [internalData, setInternalData] = useState(setInitialData(initialData) || []);
-  const [count, setCount] = useState<number>(initialData?.length || 0);
+  const [count, setCount] = useState<number>(data?.length || 0);
   const [editingKey, setEditingKey] = useState<number | null>(null);
   const [tableLoading, setTableLoading] = useState<boolean>(false);
 
@@ -80,17 +91,30 @@ const InternalEditableTable: React.ForwardRefRenderFunction<EditableTableHandles
   }));
 
   useEffect(() => {
+    // 只在数据初始化时设置 `count` 值
+    console.log(count, data, data.length);
+    if (count === 0 && Array.isArray(data) && data.length) {
+      setCount(data.length);
+    }
+
+    // 卸载时重置为 0
+    return () => {
+      setCount(0);
+    }
+  }, [data]);
+
+  useEffect(() => {
     if (props.editingKey) {
       props.editingKey(editingKey);
     }
     if (editingKey) {
       wrapForm.setFieldsValue({
-        ..._find(internalData, { key: editingKey as any }),
+        ..._find(getKeyedData(data), { key: editingKey as any }),
       });
     } else {
       wrapForm.resetFields();
     }
-  }, [editingKey])
+  }, [editingKey]);
 
   const handleLoading = async (func: () => Promise<boolean | void>) => {
     setTableLoading(true);
@@ -101,17 +125,26 @@ const InternalEditableTable: React.ForwardRefRenderFunction<EditableTableHandles
 
   const handleAdd = () => {
     let newRecord = { ...initialValues };
-    if (onRecordAdd) {
-      newRecord = { ...newRecord, ...onRecordAdd(newRecord, internalData) };
+    if (onAdd) {
+      newRecord = { ...newRecord, ...onAdd(newRecord, getKeyedData(data)) };
     }
 
-    setInternalData([
-      ...internalData,
-      {
-        ...newRecord,
-        key: count + 1,
-      },
-    ]);
+    onChange?.(tailAdd ?
+      [
+        ...getKeyedData(data),
+        {
+          ...newRecord,
+          key: count + 1,
+        },
+      ] :
+      [
+        {
+          ...newRecord,
+          key: count + 1,
+        },
+        ...getKeyedData(data),
+      ]
+    );
     setEditingKey(count + 1);
     setCount(count + 1);
   };
@@ -124,7 +157,7 @@ const InternalEditableTable: React.ForwardRefRenderFunction<EditableTableHandles
       isOk = await handleLoading(async () => await onDelete(record));
     }
     if (isOk !== false) {
-      setInternalData(internalData.filter(item => item.key !== record.key));
+      onChange?.(getKeyedData(data).filter(item => item.key !== record.key));
     }
   };
 
@@ -134,7 +167,7 @@ const InternalEditableTable: React.ForwardRefRenderFunction<EditableTableHandles
     const { onCancel } = props;
     if (_isFunction(onCancel)) { onCancel(prevRecord, { ...prevRecord, ...getColumnsValue(wrapForm.getFieldsValue()) }) }
     if (!prevRecord.id) {
-      setInternalData(internalData.filter(item => item.id));
+      onChange?.(getKeyedData(data).filter(item => item.id));
       setEditingKey(null);
       return;
     }
@@ -155,7 +188,7 @@ const InternalEditableTable: React.ForwardRefRenderFunction<EditableTableHandles
     wrapForm.validateFields().then(async (fieldsValue) => {
       console.log(fieldsValue);
       const filteredValue = getColumnsValue(fieldsValue);
-      const newData = _cloneDeep(internalData);
+      const newData = _cloneDeep(getKeyedData(data));
       const targetIndex = _findIndex(newData, item => item.key === key);
       const newRecord = {
         ...newData[targetIndex],
@@ -171,7 +204,7 @@ const InternalEditableTable: React.ForwardRefRenderFunction<EditableTableHandles
 
       if (isOk !== false) {
         newData.splice(targetIndex, 1, newRecord);
-        setInternalData(newData);
+        onChange?.(newData);
         setEditingKey(null);
       }
     });
@@ -270,17 +303,31 @@ const InternalEditableTable: React.ForwardRefRenderFunction<EditableTableHandles
     },
   };
 
+  const createOption = (
+    <Button
+      type='primary'
+      key='create'
+      onClick={handleAdd}
+      disabled={!!editingKey}
+    >
+      {intl.getMessage('create', '新建')}
+    </Button>
+  )
+
+  const _options: React.ReactNode[] = [create && createOption, toolBarRender ? toolBarRender() : null].filter(item => item);
+
   return (
     <Spin spinning={loading || tableLoading}>
       <Form form={wrapForm}>
-        <Button
-          type='primary'
-          style={{ margin: '12px 0' }}
-          onClick={handleAdd}
-          disabled={!!editingKey}
-        >
-          {intl.getMessage('create', '新建')}
-        </Button>
+        <Row gutter={8} style={{ margin: "12px 0" }}>
+          {_options.map((item, index) => {
+            return (
+              <Col key={index}>
+                {item}
+              </Col>
+            );
+          })}
+        </Row>
         <Table
           rowKey='key'
           rowClassName={(_, index) => {
@@ -291,7 +338,7 @@ const InternalEditableTable: React.ForwardRefRenderFunction<EditableTableHandles
           }}
           components={components}
           bordered
-          dataSource={internalData}
+          dataSource={getKeyedData(data)}
           columns={parseColumns(renderColumns())}
           pagination={false}
         />

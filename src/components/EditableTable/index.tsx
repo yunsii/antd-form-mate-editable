@@ -77,6 +77,7 @@ const InternalEditableTable: React.ForwardRefRenderFunction<EditableTableHandles
     options,
     toolBarRender,
     tailAdd = true,
+    ...rest
   } = props;
 
   const [wrapForm] = Form.useForm(form);
@@ -330,17 +331,12 @@ const InternalEditableTable: React.ForwardRefRenderFunction<EditableTableHandles
         </Row>
         <Table
           rowKey='key'
-          rowClassName={(_, index) => {
-            if (index % 2) {
-              return 'table-row';
-            }
-            return '';
-          }}
-          components={components}
           bordered
+          pagination={false}
+          {...rest}
+          components={components}
           dataSource={getKeyedData(data)}
           columns={parseColumns(renderColumns())}
-          pagination={false}
         />
       </Form>
     </Spin>

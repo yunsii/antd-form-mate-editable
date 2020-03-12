@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Button, Divider } from 'antd';
 import moment from 'moment';
 import EditableTable, { IntlProvider, enUSIntl } from '../../src';
-import { EditableTableHandles } from '../../src/components/EditableTable';
 
 const genderOptions = [
   {
@@ -16,40 +15,63 @@ const genderOptions = [
 ];
 
 export default () => {
-  const tableRef = React.createRef<EditableTableHandles>();
   const [
     editingKey,
     setEditingKey,
-  ] = useState<number | null>();
+  ] = useState<string | null>();
+  const mockData = [
+    {
+      id: 1,
+      gender: 1,
+      name: 'xys',
+      birthday: null,
+    },
+    {
+      id: 2,
+      gender: 2,
+      name: 'theprimone',
+      birthday: null,
+    },
+  ];
   const [data, setData] = useState<any[]>([]);
 
   useEffect(() => {
     setTimeout(() => {
-      setData([
-        {
-          id: 123,
-          gender: 1,
-          name: 'xys',
-          birthday: null,
-        },
-        {
-          id: 23,
-          gender: 2,
-          name: 'theprimone',
-          birthday: null,
-        },
-      ])
-    }, 1000);
+      setData(mockData)
+    }, 500);
   }, []);
 
   return (
     <IntlProvider value={enUSIntl}>
       <div style={{ width: '100%', height: '100%', padding: 48 }}>
         <div style={{ width: 900, margin: '0 auto' }}>
+          <Button
+            onClick={() => {
+              setData([{
+                id: data.length + 1,
+                name: "xxx",
+                gender: 1
+              }, ...data]);
+              setEditingKey("");
+            }}
+            type="primary"
+            style={{
+              margin: "12px 0",
+            }}
+          >
+            Create
+          </Button>
           <EditableTable
-            initialValues={{
-              name: "xxx",
-              gender: 1
+            rowKey="id"
+            isExistedRow={(record) => {
+              if (!record.id) { return false }
+
+              for (const item of mockData) {
+                if (item.id === record.id) {
+                  return true;
+                }
+              }
+              return false;
             }}
             columns={[
               {
@@ -103,14 +125,8 @@ export default () => {
             onCancel={(prevRecord, record) => {
               console.log(prevRecord, record);
             }}
-            editingKey={setEditingKey}
-            ref={tableRef}
-            toolBarRender={() => {
-              return [
-                <Button key="sort">Sort</Button>,
-              ]
-            }}
-            tailAdd={false}
+            editingKey={editingKey}
+            setEditingKey={(key) => setEditingKey(key)}
           />
           <Divider />
           <Button
@@ -118,17 +134,6 @@ export default () => {
             onClick={() => alert(`editingKey: ${editingKey}`)}
           >
             Alert editingKey
-          </Button>
-          <Button
-            type='primary'
-            style={{ marginLeft: 12 }}
-            onClick={() => {
-              if (tableRef?.current) {
-                alert(`isEditing: ${tableRef.current.isEditing()}`)
-              }
-            }}
-          >
-            Alert isEditing
           </Button>
         </div>
       </div>

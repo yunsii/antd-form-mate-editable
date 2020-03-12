@@ -86,7 +86,7 @@ export default function EditableTable<RecordType>(props: EditableTableProps<Reco
     if (editingKey) {
       data.forEach((item, index) => {
         const itemKey = getKey(item, index, rest.rowKey);
-        if (itemKey) {
+        if (itemKey === editingKey) {
           wrapForm.setFieldsValue(item);
         }
       })

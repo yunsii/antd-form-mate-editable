@@ -1,7 +1,7 @@
 {
   "name": "antd-form-mate-editable",
   "description": "📦 基于 antd-form-mate 的可编辑表格",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "main": "./dist/index.js",
   "dependencies": {
     "antd": "^4.0.2",

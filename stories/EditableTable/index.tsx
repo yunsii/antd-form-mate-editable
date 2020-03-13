@@ -52,7 +52,7 @@ export default () => {
                 name: "xxx",
                 gender: 1
               }, ...data]);
-              setEditingKey("");
+              setEditingKey(`${data.length + 1}`);
             }}
             type="primary"
             style={{
@@ -63,7 +63,7 @@ export default () => {
           </Button>
           <EditableTable
             rowKey="id"
-            isExistedRow={(record) => {
+            isExistedRecord={(record) => {
               if (!record.id) { return false }
 
               for (const item of mockData) {

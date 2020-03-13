@@ -25,6 +25,8 @@ export default () => {
       gender: 1,
       name: 'xys',
       birthday: null,
+
+      extra: "extra",
     },
     {
       id: 2,
@@ -107,6 +109,10 @@ export default () => {
                   }
                 },
               },
+              {
+                title: 'extra',
+                dataIndex: 'extra',
+              },
             ]}
             data={data}
             onCreate={async (record) => {
@@ -119,7 +125,7 @@ export default () => {
               console.log('delete record', record);
             }}
             onChange={(data) => {
-              console.log(data);
+              console.log('new data', data);
               setData(data);
             }}
             onCancel={(prevRecord, record) => {

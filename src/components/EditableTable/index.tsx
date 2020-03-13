@@ -25,6 +25,11 @@ export interface EditableColumnProps<RecordType = any> extends ColumnType<Record
   editConfig?: FormItemConfig;
 }
 
+export interface OptionsType {
+  edit?: boolean;
+  delete?: boolean;
+}
+
 export interface EditableTableProps<RecordType = any> extends Omit<TableProps<RecordType>, "dataSource" | "onChange"> {
   formProps?: FormProps;
   columns?: EditableColumnProps<RecordType>[];
@@ -69,6 +74,7 @@ export interface EditableTableProps<RecordType = any> extends Omit<TableProps<Re
    */
   isExistedRecord?: (record: RecordType) => boolean;
   withSpin?: boolean;
+  options?: OptionsType;
 }
 
 function getRecordKey<RecordType>(rowKey: EditableTableProps<RecordType>["rowKey"]) {
@@ -101,6 +107,10 @@ export default function EditableTable<RecordType>(props: EditableTableProps<Reco
     setEditingKey,
     isExistedRecord = () => true,
     withSpin = true,
+    options = {
+      edit: true,
+      delete: true,
+    },
     ...rest
   } = props;
 
@@ -234,16 +244,16 @@ export default function EditableTable<RecordType>(props: EditableTableProps<Reco
     }
 
     const setInitOptionsConfig = (record, index) => {
-      let result: { text: string; onClick: (() => void) | undefined }[] = [
-        {
+      let result = [
+        options.edit ? {
           text: intl.getMessage('edit', '编辑'),
           onClick: () => { setEditingKey?.(getKey(record, index)) },
-        },
-        {
+        } : false,
+        options.delete ? {
           text: intl.getMessage('delete', '删除'),
           onClick: () => { handleDelete(record, index) },
-        },
-      ];
+        } : false,
+      ].filter(item => item) as ({ text: string; onClick: (() => void) | undefined })[];
       if (editingKey && editingKey !== record.key) {
         return result.map(item => ({ text: item.text, onClick: undefined }));
       }

@@ -1,7 +1,7 @@
 /* eslint-disable react/no-multi-comp */
 import React, { useState, useEffect } from 'react';
 import { Table, Spin, Popconfirm, Form } from 'antd';
-import { FormInstance } from 'antd/lib/form/Form';
+import { FormProps } from 'antd/lib/form/Form';
 import { TableProps, ColumnType } from 'antd/lib/table';
 import _get from 'lodash/get';
 import _cloneDeep from 'lodash/cloneDeep';
@@ -26,7 +26,7 @@ export interface EditableColumnProps<RecordType = any> extends ColumnType<Record
 }
 
 export interface EditableTableProps<RecordType = any> extends Omit<TableProps<RecordType>, "dataSource" | "onChange"> {
-  form?: FormInstance;
+  formProps?: FormProps;
   columns?: EditableColumnProps<RecordType>[];
   data?: RecordType[];
   /**
@@ -68,6 +68,7 @@ export interface EditableTableProps<RecordType = any> extends Omit<TableProps<Re
    * 2. 当保存时，根据是否已经存在判断调用 `onCreate` 还是 `onUpdate`
    */
   isExistedRecord?: (record: RecordType) => boolean;
+  withSpin?: boolean;
 }
 
 function getRecordKey<RecordType>(rowKey: EditableTableProps<RecordType>["rowKey"]) {
@@ -87,9 +88,9 @@ function getRecordKey<RecordType>(rowKey: EditableTableProps<RecordType>["rowKey
 export default function EditableTable<RecordType>(props: EditableTableProps<RecordType>) {
   const intl = useIntl();
   const {
+    formProps,
     columns,
     data = [],
-    form,
     loading = false,
     onCreate = () => true,
     onUpdate = () => true,
@@ -99,10 +100,11 @@ export default function EditableTable<RecordType>(props: EditableTableProps<Reco
     editingKey,
     setEditingKey,
     isExistedRecord = () => true,
+    withSpin = true,
     ...rest
   } = props;
 
-  const [wrapForm] = Form.useForm(form);
+  const [wrapForm] = Form.useForm(formProps?.form);
 
   const [tableLoading, setTableLoading] = useState<boolean>(false);
   const getKey = getRecordKey(rest.rowKey);
@@ -292,18 +294,22 @@ export default function EditableTable<RecordType>(props: EditableTableProps<Reco
     },
   };
 
-  return (
-    <Spin spinning={loading || tableLoading}>
-      <Form form={wrapForm}>
-        <Table
-          bordered
-          pagination={false}
-          {...rest}
-          components={components}
-          dataSource={data}
-          columns={parseColumns(renderColumns())}
-        />
-      </Form>
-    </Spin>
+  const FormTable = (
+    <Form {...formProps}>
+      <Table
+        bordered
+        pagination={false}
+        {...rest}
+        components={components}
+        dataSource={data}
+        columns={parseColumns(renderColumns())}
+      />
+    </Form>
   );
+
+  return withSpin ? (
+    <Spin spinning={loading || tableLoading}>
+      {FormTable}
+    </Spin>
+  ) : FormTable;
 }

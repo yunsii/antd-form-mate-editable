@@ -152,7 +152,7 @@ export default function EditableTable<RecordType>(props: EditableTableProps<Reco
   const isEditingRecord = (record, index) => editingKey && getKey(record, index) === editingKey;
 
   const handleCancel = (prevRecord, index) => {
-    onCancel?.(prevRecord, { ...prevRecord, ...getColumnsValue(wrapForm.getFieldsValue()) });
+    onCancel?.(prevRecord, { ...prevRecord, ...wrapForm.getFieldsValue() });
 
     console.log(!isExistedRecord?.(prevRecord));
     if (!isExistedRecord?.(prevRecord)) {
@@ -163,20 +163,8 @@ export default function EditableTable<RecordType>(props: EditableTableProps<Reco
     setEditingKey?.(null);
   };
 
-  const getColumnsValue = (fieldsValue) => {
-    let result: any = {};
-    columns && columns.forEach((element) => {
-      if (element.dataIndex) {
-        result[element.dataIndex as string] = fieldsValue[element.dataIndex as string];
-      }
-    });
-    return result;
-  }
-
   const handleSave = (record: RecordType, index: number) => {
     wrapForm.validateFields().then(async (fieldsValue) => {
-      console.log(fieldsValue);
-      const filteredValue = getColumnsValue(fieldsValue);
       const newData = _cloneDeep(data);
       const targetIndex = _findIndex(newData, (item, itemIndex) => {
         const itemKey = getKey(item, itemIndex);
@@ -184,8 +172,9 @@ export default function EditableTable<RecordType>(props: EditableTableProps<Reco
       });
       const newRecord = {
         ...newData[targetIndex],
-        ...filteredValue,
+        ...fieldsValue,
       };
+      console.log('new record', newRecord);
       let isOk: boolean | void = true;
       if (isExistedRecord(newRecord)) {
         isOk = await handleLoading(async () => await onUpdate(newRecord));
@@ -295,7 +284,10 @@ export default function EditableTable<RecordType>(props: EditableTableProps<Reco
   };
 
   const FormTable = (
-    <Form {...formProps}>
+    <Form
+      {...formProps}
+      form={wrapForm}
+    >
       <Table
         bordered
         pagination={false}

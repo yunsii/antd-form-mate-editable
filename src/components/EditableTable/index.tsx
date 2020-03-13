@@ -25,34 +25,65 @@ export interface EditableColumnProps<RecordType = any> extends ColumnType<Record
   editConfig?: FormItemConfig;
 }
 
-export interface OptionsType {
-  create?: boolean;
-}
-
 export interface EditableTableProps<RecordType = any> extends Omit<TableProps<RecordType>, "dataSource" | "onChange"> {
   form?: FormInstance;
   columns?: EditableColumnProps<RecordType>[];
   data?: RecordType[];
+  /**
+   * 覆盖默认的 `onChange` 事件
+   */
   onChange?: (data: RecordType[]) => void;
+  /**
+   * 创建一条记录的回调，返回值为真时创建成功
+   * 
+   * 成功后自动回调 `onChange` 和 `setEditingKey` 事件
+   */
   onCreate?: (fieldsValue: RecordType) => Promise<boolean | void>;
+  /**
+   * 更新一条记录的回调，返回值为真时更新成功
+   * 
+   * 成功后自动回调 `onChange` 和 `setEditingKey` 事件
+   */
   onUpdate?: (fieldsValue: RecordType) => Promise<boolean | void>;
+  /**
+   * 删除一条记录的回调，返回值为真时删除成功
+   * 
+   * 成功后自动回调 `onChange` 和 `setEditingKey` 事件
+   */
   onDelete?: (record: RecordType) => Promise<boolean | void>;
+  /**
+   * 点击取消时的回调
+   * 
+   * 可能的使用场景：
+   *     存在外部的表单字段与当前的 `data` 联动，比如外部某个字段对 `data` 的某列求和，取消时需要回滚求和结果
+   */
   onCancel?: (prevRecord: RecordType, record: RecordType) => void;
   loading?: boolean;
-  // 添加一条记录时，回调处理新增的记录
-  onAdd?: (initialRecord: RecordType, prevData: RecordType[]) => RecordType;
   editingKey?: string | null;
   setEditingKey?: (key: string | null) => void;
-  isExistedRow?: (record: RecordType) => boolean;
+  /**
+   * 是否已经存在的记录
+   * 
+   * 1. 当取消或删除时，如果不是已经存在的记录，直接删除，不会还原当前记录或调用 `onDelete` 事件
+   * 2. 当保存时，根据是否已经存在判断调用 `onCreate` 还是 `onUpdate`
+   */
+  isExistedRecord?: (record: RecordType) => boolean;
 }
 
-function getKey<RecordType>(record: RecordType, index: number, rowKey: EditableTableProps<RecordType>["rowKey"]) {
-  if (_isFunction(rowKey)) {
-    return `${rowKey(record, index)}`;
+function getRecordKey<RecordType>(rowKey: EditableTableProps<RecordType>["rowKey"]) {
+  return (record: RecordType, index: number) => {
+    if (_isFunction(rowKey)) {
+      return `${rowKey(record, index)}`;
+    }
+    return `${record[rowKey!]}`;
   }
-  return `${record[rowKey!]}`;
 }
 
+/**
+ * 📦 基于 antd-form-mate 的可编辑表格
+ * 
+ * 组件只对 Table 组件进行了封装，如果需要创建功能，外部渲染一个创建按钮修改相关状态并传入 `onCreate` 事件即可
+ */
 export default function EditableTable<RecordType>(props: EditableTableProps<RecordType>) {
   const intl = useIntl();
   const {
@@ -63,29 +94,30 @@ export default function EditableTable<RecordType>(props: EditableTableProps<Reco
     onCreate = () => true,
     onUpdate = () => true,
     onDelete = () => true,
+    onCancel,
     onChange,
-    onAdd,
     editingKey,
     setEditingKey,
-    isExistedRow = () => true,
+    isExistedRecord = () => true,
     ...rest
   } = props;
 
   const [wrapForm] = Form.useForm(form);
 
   const [tableLoading, setTableLoading] = useState<boolean>(false);
+  const getKey = getRecordKey(rest.rowKey);
 
   const getFilteredData = (record: RecordType, index: number) => {
     return data.filter((item, itemIndex) => {
-      const itemKey = getKey(item, itemIndex, rest.rowKey);
-      return itemKey !== getKey(record, index, rest.rowKey);
+      const itemKey = getKey(item, itemIndex);
+      return itemKey !== getKey(record, index);
     });
   }
 
   useEffect(() => {
     if (editingKey) {
       data.forEach((item, index) => {
-        const itemKey = getKey(item, index, rest.rowKey);
+        const itemKey = getKey(item, index);
         if (itemKey === editingKey) {
           wrapForm.setFieldsValue(item);
         }
@@ -104,23 +136,24 @@ export default function EditableTable<RecordType>(props: EditableTableProps<Reco
 
   const handleDelete = async (record, index) => {
     let isOk: boolean | void;
-    if (!isExistedRow(record)) {
+    if (!isExistedRecord(record)) {
       isOk = true;
     } else {
       isOk = await handleLoading(async () => await onDelete(record));
     }
     if (isOk !== false) {
       onChange?.(getFilteredData(record, index));
+      setEditingKey?.(null);
     }
   };
 
-  const isEditingRecord = (record, index) => editingKey && getKey(record, index, rest.rowKey) === editingKey;
+  const isEditingRecord = (record, index) => editingKey && getKey(record, index) === editingKey;
 
   const handleCancel = (prevRecord, index) => {
-    const { onCancel } = props;
-    if (_isFunction(onCancel)) { onCancel(prevRecord, { ...prevRecord, ...getColumnsValue(wrapForm.getFieldsValue()) }) }
-    console.log(!isExistedRow?.(prevRecord));
-    if (!isExistedRow?.(prevRecord)) {
+    onCancel?.(prevRecord, { ...prevRecord, ...getColumnsValue(wrapForm.getFieldsValue()) });
+
+    console.log(!isExistedRecord?.(prevRecord));
+    if (!isExistedRecord?.(prevRecord)) {
       onChange?.(getFilteredData(prevRecord, index));
       setEditingKey?.(null);
       return;
@@ -144,15 +177,15 @@ export default function EditableTable<RecordType>(props: EditableTableProps<Reco
       const filteredValue = getColumnsValue(fieldsValue);
       const newData = _cloneDeep(data);
       const targetIndex = _findIndex(newData, (item, itemIndex) => {
-        const itemKey = getKey(item, itemIndex, rest.rowKey);
-        return itemKey === getKey(record, index, rest.rowKey);
+        const itemKey = getKey(item, itemIndex);
+        return itemKey === getKey(record, index);
       });
       const newRecord = {
         ...newData[targetIndex],
         ...filteredValue,
       };
       let isOk: boolean | void = true;
-      if (isExistedRow(newRecord)) {
+      if (isExistedRecord(newRecord)) {
         isOk = await handleLoading(async () => await onUpdate(newRecord));
       } else {
         isOk = await handleLoading(async () => await onCreate(newRecord));
@@ -213,7 +246,7 @@ export default function EditableTable<RecordType>(props: EditableTableProps<Reco
       let result: { text: string; onClick: (() => void) | undefined }[] = [
         {
           text: intl.getMessage('edit', '编辑'),
-          onClick: () => { setEditingKey?.(getKey(record, index, rest.rowKey)) },
+          onClick: () => { setEditingKey?.(getKey(record, index)) },
         },
         {
           text: intl.getMessage('delete', '删除'),
@@ -244,7 +277,7 @@ export default function EditableTable<RecordType>(props: EditableTableProps<Reco
       {
         title: intl.getMessage('option', '操作'),
         render: (_: void, record, index) => {
-          if (!editingKey || editingKey !== getKey(record, index, rest.rowKey)) {
+          if (!editingKey || editingKey !== getKey(record, index)) {
             return addDivider(setInitOptionsConfig(record, index).map(renderOption));
           }
           return addDivider(setEditOptionsConfig(record, index).map(renderOption));

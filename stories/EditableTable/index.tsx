@@ -133,6 +133,9 @@ export default () => {
             }}
             editingKey={editingKey}
             setEditingKey={(key) => setEditingKey(key)}
+            options={{
+              delete: true,
+            }}
           />
           <Divider />
           <Button
